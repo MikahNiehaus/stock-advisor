@@ -44,68 +44,68 @@ const HARDCODED_AI_ADVICE =
 
 // ✅ Scrape Nancy Pelosi's Stock Trades from CapitolTrades
 async function fetchPelosiTrades() {
-  try {
-    console.log(`🔍 Scraping stock trades for Nancy Pelosi...`);
-
-    // ✅ Puppeteer Launch Fix for Railway
-    const browser = await puppeteer.launch({
-      headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome-stable",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--disable-software-rasterizer"
-      ],
-    });
-
-    const page = await browser.newPage();
-
-    // Spoof User-Agent to bypass bot detection
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    );
-
-    const url = `https://www.capitoltrades.com/politicians/P000197`;
-    console.log(`🌐 Navigating to URL: ${url}`);
-
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
-
-    console.log("✅ Page loaded, extracting trade data...");
-    const trades = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("tbody tr"))
-        .map((row) => {
-          const columns = row.querySelectorAll("td");
-          if (columns.length >= 3) {
-            return {
-              stock: columns[0].innerText.trim(),
-              transaction: columns[1].innerText.trim(),
-              date: columns[2].innerText.trim(),
-            };
-          }
-          return null;
-        })
-        .filter((trade) => trade !== null);
-    });
-
-    await browser.close();
-
-    if (trades.length === 0) {
-      console.warn("⚠️ No trades found.");
+    try {
+      console.log(`🔍 Scraping stock trades for Nancy Pelosi...`);
+  
+      // ✅ Puppeteer Launch for Railway
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--no-first-run",
+          "--no-zygote",
+          "--single-process",
+          "--disable-software-rasterizer",
+        ],
+      });
+  
+      const page = await browser.newPage();
+  
+      // Spoof User-Agent to bypass bot detection
+      await page.setUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+      );
+  
+      const url = `https://www.capitoltrades.com/politicians/P000197`;
+      console.log(`🌐 Navigating to URL: ${url}`);
+  
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
+  
+      console.log("✅ Page loaded, extracting trade data...");
+      const trades = await page.evaluate(() => {
+        return Array.from(document.querySelectorAll("tbody tr"))
+          .map((row) => {
+            const columns = row.querySelectorAll("td");
+            if (columns.length >= 3) {
+              return {
+                stock: columns[0].innerText.trim(),
+                transaction: columns[1].innerText.trim(),
+                date: columns[2].innerText.trim(),
+              };
+            }
+            return null;
+          })
+          .filter((trade) => trade !== null);
+      });
+  
+      await browser.close();
+  
+      if (trades.length === 0) {
+        console.warn("⚠️ No trades found.");
+        return { trades: HARD_CODED_TRADES, isFallback: true };
+      }
+  
+      console.log(`📊 Extracted ${trades.length} trades.`);
+      return { trades, isFallback: false };
+    } catch (error) {
+      console.error("❌ Failed to fetch Pelosi's trades:", error.message);
       return { trades: HARD_CODED_TRADES, isFallback: true };
     }
-
-    console.log(`📊 Extracted ${trades.length} trades.`);
-    return { trades, isFallback: false };
-  } catch (error) {
-    console.error("❌ Failed to fetch Pelosi's trades:", error.message);
-    return { trades: HARD_CODED_TRADES, isFallback: true };
   }
-}
+  
 
 // ✅ AI-Powered Stock Investment Advice
 async function getStockAdvice(trades) {

@@ -6,21 +6,25 @@ function StockAdvisor() {
   const [loading, setLoading] = useState(false);
   const [timestamp, setTimestamp] = useState(null);
 
+  // ✅ Auto-detect local vs. production mode
+  const LOCAL_BACKEND = "http://localhost:5000";
+  const PRODUCTION_BACKEND = process.env.REACT_APP_BACKEND_URL || "https://stock-advisor-production.up.railway.app";
+
+  const backendUrls = [
+    process.env.NODE_ENV === "development" ? LOCAL_BACKEND : PRODUCTION_BACKEND,
+    PRODUCTION_BACKEND, // Always try the production URL last
+  ];
+
   const fetchStockAnalysis = async () => {
     setLoading(true);
     setTrades([]);
     setAiAdvice(null);
     setTimestamp(null);
 
-    const urls = [
-      "http://localhost:5000/politician-trades/nancy-pelosi/ai", // Local server
-      "https://stock-advisor-production.up.railway.app/politician-trades/nancy-pelosi/ai", // Railway server
-    ];
-
-    for (const url of urls) {
+    for (const url of backendUrls) {
       try {
-        console.log(`🔍 Trying to fetch from: ${url}`);
-        const response = await fetch(url);
+        console.log(`🔍 Trying to fetch from: ${url}/politician-trades/nancy-pelosi/ai`);
+        const response = await fetch(`${url}/politician-trades/nancy-pelosi/ai`);
 
         if (!response.ok) {
           throw new Error(`Server returned ${response.status}: ${response.statusText}`);
@@ -29,17 +33,17 @@ function StockAdvisor() {
         const data = await response.json();
         console.log("✅ Response received:", data);
 
+        // ✅ Set the data & stop looping
         setTrades(data.trades || []);
         setAiAdvice(data.aiAdvice || "No AI advice available.");
         setTimestamp(new Date().toLocaleString());
-
-        return; // Exit the loop on success
+        return; // ✅ Exit the loop if request is successful
       } catch (error) {
         console.warn(`⚠️ Failed to fetch from: ${url}`, error.message);
-        setAiAdvice(`Error: ${error.message}`);
       }
     }
 
+    // ❌ If both API calls fail, show error
     setAiAdvice("❌ Unable to fetch data from both local and Railway servers.");
     setLoading(false);
   };
@@ -52,8 +56,8 @@ function StockAdvisor() {
         maxWidth: "600px",
         margin: "auto",
         textAlign: "center",
-        backgroundColor: "#1e1e1e", // Dark background
-        color: "#ffffff", // Light text
+        backgroundColor: "#1e1e1e",
+        color: "#ffffff",
         borderRadius: "10px",
         paddingBottom: "20px",
       }}
