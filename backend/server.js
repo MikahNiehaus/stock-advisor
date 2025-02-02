@@ -13,10 +13,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const dataFolder = path.join(__dirname, "data");
-if (!fs.existsSync(dataFolder)) {
-  fs.mkdirSync(dataFolder);
-}
 
 // ✅ Load OpenAI API Key from environment variables (Same as Reference Code)
 if (!process.env.OPENAI_API_KEY) {
@@ -63,11 +59,6 @@ async function fetchPelosiTrades() {
 
     console.log(`📊 Extracted ${trades.length} trades.`);
     
-    // ✅ Save trades to a file
-    const fileName = path.join(dataFolder, `pelosi-trades-${Date.now()}.json`);
-    fs.writeFileSync(fileName, JSON.stringify(trades, null, 2));
-    console.log(`💾 Saved Pelosi's trades to file: ${fileName}`);
-
     return { trades };
   } catch (error) {
     console.error("❌ Failed to fetch Pelosi's trades:", error.message);
