@@ -14,7 +14,7 @@ app.use(express.json());
 
 // ✅ Load OpenAI API Key from Environment Variables
 if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ ERROR: OPENAI_API_KEY is missing!");
+  console.error("❌ ERROR: OPENAI_API_KEY is missing! Check Railway environment variables.");
   process.exit(1);
 }
 
@@ -38,6 +38,7 @@ async function fetchPelosiTrades() {
         "--single-process",
       ],
     });
+
     const page = await browser.newPage();
 
     // Spoof User-Agent to bypass bot detection
@@ -86,6 +87,7 @@ async function fetchPelosiTrades() {
 async function getStockAdvice(trades) {
   try {
     console.log("🤖 Sending trade data to OpenAI for AI investment recommendations...");
+    
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [
@@ -115,10 +117,12 @@ async function getStockAdvice(trades) {
 // ✅ API to Get Nancy Pelosi's Stock Trades with AI Analysis
 app.get("/politician-trades/nancy-pelosi/ai", async (req, res) => {
   console.log(`📊 Retrieving stock trades for Nancy Pelosi with AI analysis...`);
+  
   try {
     const tradesData = await fetchPelosiTrades();
     if (tradesData.error) {
-      return res.json(tradesData);
+      console.error(`⚠️ Error fetching trades: ${tradesData.error}`);
+      return res.status(500).json(tradesData);
     }
 
     const aiAdvice = await getStockAdvice(tradesData.trades);
@@ -129,8 +133,13 @@ app.get("/politician-trades/nancy-pelosi/ai", async (req, res) => {
   }
 });
 
+// ✅ Health Check Route (for debugging on Railway)
+app.get("/", (req, res) => {
+  res.json({ status: "✅ Backend is running!" });
+});
+
 // ✅ Start Server (Use Dynamic Port)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
+  console.log(`🚀 Server running on port ${PORT}`)
 );
