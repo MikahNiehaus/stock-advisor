@@ -1,10 +1,9 @@
 import express from "express";
 import cors from "cors";
 import puppeteer from "puppeteer";
-import fs from "fs";
-import path from "path";
 import OpenAI from "openai";
 import { fileURLToPath } from "url";
+import path from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,8 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-// ✅ Load OpenAI API Key from environment variables (Same as Reference Code)
+// ✅ Load OpenAI API Key from Environment Variables
 if (!process.env.OPENAI_API_KEY) {
   console.error("❌ ERROR: OPENAI_API_KEY is missing!");
   process.exit(1);
@@ -26,18 +24,36 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 async function fetchPelosiTrades() {
   try {
     console.log(`🔍 Scraping stock trades for Nancy Pelosi...`);
-    
-    const browser = await puppeteer.launch({ headless: "new" }); 
-    const page = await browser.newPage();
-    const url = `https://www.capitoltrades.com/politicians/P000197`;
 
+    // Puppeteer launch options for cloud environments
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process",
+      ],
+    });
+    const page = await browser.newPage();
+
+    // Spoof User-Agent to bypass bot detection
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    );
+
+    const url = `https://www.capitoltrades.com/politicians/P000197`;
     console.log(`🌐 Navigating to URL: ${url}`);
+
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
 
     console.log("✅ Page loaded, extracting trade data...");
     const trades = await page.evaluate(() => {
       return Array.from(document.querySelectorAll("tbody tr"))
-        .map(row => {
+        .map((row) => {
           const columns = row.querySelectorAll("td");
           if (columns.length >= 3) {
             return {
@@ -47,7 +63,8 @@ async function fetchPelosiTrades() {
             };
           }
           return null;
-        }).filter(trade => trade !== null);
+        })
+        .filter((trade) => trade !== null);
     });
 
     await browser.close();
@@ -58,7 +75,6 @@ async function fetchPelosiTrades() {
     }
 
     console.log(`📊 Extracted ${trades.length} trades.`);
-    
     return { trades };
   } catch (error) {
     console.error("❌ Failed to fetch Pelosi's trades:", error.message);
@@ -73,21 +89,23 @@ async function getStockAdvice(trades) {
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [
-        { 
-            "role": "system", 
-            "content": "You are an expert stock analyst specializing in political trading patterns. Based on Nancy Pelosi's trade data, provide decisive investment recommendations. Be direct and confident in your advice." 
+        {
+          role: "system",
+          content:
+            "You are an expert stock analyst specializing in political trading patterns. Based on Nancy Pelosi's trade data, provide decisive investment recommendations. Be direct and confident in your advice.",
         },
-        { 
-            "role": "user", 
-            "content": `Analyze these stock trades and provide concise investment recommendations. Follow this format strictly: "You should invest in [Stock] because [reason]." Use strong and clear language. Here is the trade data: ${JSON.stringify(trades)}`
-        }
-    ],
-    
+        {
+          role: "user",
+          content: `Analyze these stock trades and provide concise investment recommendations. Follow this format strictly: "You should invest in [Stock] because [reason]." Use strong and clear language. Here is the trade data: ${JSON.stringify(
+            trades
+          )}`,
+        },
+      ],
       max_tokens: 50, // ✅ Lower tokens for cost savings
-      temperature: 1.5 // ✅ Higher temperature for aggressive investment suggestions
+      temperature: 1.5, // ✅ Higher temperature for aggressive investment suggestions
     });
 
-    return aiResponse.choices[0].message.content || "No AI advice provided.";
+    return aiResponse.choices[0]?.message?.content || "No AI advice provided.";
   } catch (error) {
     console.error("❌ Error generating stock advice:", error.message);
     return "Error generating AI advice.";
@@ -111,6 +129,8 @@ app.get("/politician-trades/nancy-pelosi/ai", async (req, res) => {
   }
 });
 
-// ✅ Start Server
-const PORT = 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+// ✅ Start Server (Use Dynamic Port)
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+);
