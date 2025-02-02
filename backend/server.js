@@ -18,7 +18,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // ✅ Toggle AI Advice (Set to true/false)
 const USE_AI_ADVICE = false; // ❌ Currently OFF (Uses hardcoded AI advice)
 
-// ✅ Hardcoded Fallback Trade Data (Used when API Scraping Fails)
+// ✅ Hardcoded Fallback Trade Data (Used when Scraping Fails)
 const HARD_CODED_TRADES = [
   { stock: "Alphabet Inc\nGOOGL:US", transaction: "20 Jan\n2025", date: "14 Jan\n2025" },
   { stock: "Amazon.com Inc\nAMZN:US", transaction: "20 Jan\n2025", date: "14 Jan\n2025" },
@@ -47,9 +47,10 @@ async function fetchPelosiTrades() {
   try {
     console.log(`🔍 Scraping stock trades for Nancy Pelosi...`);
 
-    // Puppeteer launch options for cloud environments
+    // ✅ Puppeteer Launch Fix for Railway
     const browser = await puppeteer.launch({
-      headless: "new",
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome-stable",
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -58,6 +59,7 @@ async function fetchPelosiTrades() {
         "--no-first-run",
         "--no-zygote",
         "--single-process",
+        "--disable-software-rasterizer"
       ],
     });
 
@@ -159,6 +161,6 @@ app.get("/politician-trades/nancy-pelosi/ai", async (req, res) => {
   }
 });
 
-// ✅ Start Server
-const PORT = process.env.PORT || 5000;
+// ✅ Start Server (Use Dynamic Port for Railway)
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
