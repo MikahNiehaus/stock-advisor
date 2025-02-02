@@ -1,4 +1,11 @@
 {
+  "name": "stock-advisor-backend",
+  "version": "1.0.0",
+  "description": "Backend for AI stock advisor using OpenAI & Puppeteer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
@@ -7,5 +14,8 @@
     "express": "^4.21.2",
     "openai": "^4.82.0",
     "puppeteer": "^24.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
