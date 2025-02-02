@@ -2,11 +2,6 @@ import express from "express";
 import cors from "cors";
 import puppeteer from "puppeteer";
 import OpenAI from "openai";
-import { fileURLToPath } from "url";
-import path from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
@@ -19,6 +14,33 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// ✅ Toggle AI Advice (Set to true/false)
+const USE_AI_ADVICE = false; // ❌ Currently OFF (Uses hardcoded AI advice)
+
+// ✅ Hardcoded Fallback Trade Data (Used when API Scraping Fails)
+const HARD_CODED_TRADES = [
+  { stock: "Alphabet Inc\nGOOGL:US", transaction: "20 Jan\n2025", date: "14 Jan\n2025" },
+  { stock: "Amazon.com Inc\nAMZN:US", transaction: "20 Jan\n2025", date: "14 Jan\n2025" },
+  { stock: "Apple Inc\nAAPL:US", transaction: "20 Jan\n2025", date: "31 Dec\n2024" },
+  { stock: "NVIDIA Corporation\nNVDA:US", transaction: "20 Jan\n2025", date: "31 Dec\n2024" },
+  { stock: "NVIDIA Corporation\nNVDA:US", transaction: "20 Jan\n2025", date: "20 Dec\n2024" },
+  { stock: "NVIDIA Corporation\nNVDA:US", transaction: "20 Jan\n2025", date: "14 Jan\n2025" },
+  { stock: "Palo Alto Networks Inc\nPANW:US", transaction: "20 Jan\n2025", date: "20 Dec\n2024" },
+  { stock: "TEMPUS AI INC\nTEM:US", transaction: "20 Jan\n2025", date: "14 Jan\n2025" },
+  { stock: "Vistra Corp\nVST:US", transaction: "20 Jan\n2025", date: "14 Jan\n2025" },
+  { stock: "REOF XXVI LLC\nN/A", transaction: "12 Sept\n2024", date: "13 Aug\n2024" },
+  { stock: "Microsoft Corp\nMSFT:US", transaction: "31 Jul\n2024", date: "26 Jul\n2024" },
+  { stock: "NVIDIA Corporation\nNVDA:US", transaction: "31 Jul\n2024", date: "26 Jul\n2024" },
+  { stock: "Broadcom Inc\nAVGO:US", transaction: "3 Jul\n2024", date: "24 Jun\n2024" },
+  { stock: "NVIDIA Corporation\nNVDA:US", transaction: "3 Jul\n2024", date: "26 Jun\n2024" },
+  { stock: "Tesla Inc\nTSLA:US", transaction: "3 Jul\n2024", date: "24 Jun\n2024" }
+];
+
+// ✅ Hardcoded AI Advice (Used when AI is OFF)
+const HARDCODED_AI_ADVICE = 
+  "You should invest in NVIDIA Corporation (NVDA) because the repeated and recent trading activities suggest the anticipation of growth or leading technological advancements in their sectors such as AI and gaming hardware.\n\n" +
+  "You should invest in Tesla Inc. (TSLA) because a continued trend in legislative trading suggests confidence in the company’s future growth.";
 
 // ✅ Scrape Nancy Pelosi's Stock Trades from CapitolTrades
 async function fetchPelosiTrades() {
@@ -72,20 +94,25 @@ async function fetchPelosiTrades() {
 
     if (trades.length === 0) {
       console.warn("⚠️ No trades found.");
-      return { error: "No recent trades available." };
+      return { trades: HARD_CODED_TRADES, isFallback: true };
     }
 
     console.log(`📊 Extracted ${trades.length} trades.`);
-    return { trades };
+    return { trades, isFallback: false };
   } catch (error) {
     console.error("❌ Failed to fetch Pelosi's trades:", error.message);
-    return { error: "Failed to retrieve politician trades." };
+    return { trades: HARD_CODED_TRADES, isFallback: true };
   }
 }
 
 // ✅ AI-Powered Stock Investment Advice
 async function getStockAdvice(trades) {
   try {
+    if (!USE_AI_ADVICE) {
+      console.log("⚠️ AI Advice is OFF. Returning hardcoded investment advice.");
+      return HARDCODED_AI_ADVICE;
+    }
+
     console.log("🤖 Sending trade data to OpenAI for AI investment recommendations...");
     
     const aiResponse = await openai.chat.completions.create({
@@ -93,18 +120,15 @@ async function getStockAdvice(trades) {
       messages: [
         {
           role: "system",
-          content:
-            "You are an expert stock analyst specializing in political trading patterns. Based on Nancy Pelosi's trade data, provide decisive investment recommendations. Be direct and confident in your advice.",
+          content: "You are an expert stock analyst specializing in political trading patterns. Based on Nancy Pelosi's trade data, provide decisive investment recommendations."
         },
         {
           role: "user",
-          content: `Analyze these stock trades and provide concise investment recommendations. Follow this format strictly: "You should invest in [Stock] because [reason]." Use strong and clear language. Here is the trade data: ${JSON.stringify(
-            trades
-          )}`,
-        },
+          content: `Analyze these stock trades and provide concise investment recommendations. Here is the trade data: ${JSON.stringify(trades)}`
+        }
       ],
-      max_tokens: 50, // ✅ Lower tokens for cost savings
-      temperature: 1.5, // ✅ Higher temperature for aggressive investment suggestions
+      max_tokens: 50,
+      temperature: 1.5
     });
 
     return aiResponse.choices[0]?.message?.content || "No AI advice provided.";
@@ -120,26 +144,21 @@ app.get("/politician-trades/nancy-pelosi/ai", async (req, res) => {
   
   try {
     const tradesData = await fetchPelosiTrades();
-    if (tradesData.error) {
-      console.error(`⚠️ Error fetching trades: ${tradesData.error}`);
-      return res.status(500).json(tradesData);
-    }
-
     const aiAdvice = await getStockAdvice(tradesData.trades);
-    res.json({ ...tradesData, aiAdvice });
+
+    res.json({ 
+      trades: tradesData.trades, 
+      aiAdvice, 
+      aiEnabled: USE_AI_ADVICE, 
+      isFallback: tradesData.isFallback,
+      message: USE_AI_ADVICE ? "✅ AI Advice is ON." : "⚠️ AI Advice is OFF. Using hardcoded investment advice."
+    });
   } catch (error) {
     console.error("❌ Error retrieving Pelosi's trades:", error.message);
     res.status(500).json({ error: "Something went wrong." });
   }
 });
 
-// ✅ Health Check Route (for debugging on Railway)
-app.get("/", (req, res) => {
-  res.json({ status: "✅ Backend is running!" });
-});
-
-// ✅ Start Server (Use Dynamic Port)
+// ✅ Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
