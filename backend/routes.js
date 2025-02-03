@@ -15,7 +15,6 @@ router.get("/api/all-politician-trades", async (req, res) => {
     res.json({
       status: "success",
       message: "Fetched all politicians' trades successfully.",
-      trades,
       aiAdvice,
     });
   } catch (error) {

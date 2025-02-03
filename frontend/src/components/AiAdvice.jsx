@@ -1,6 +1,10 @@
 import React from "react";
 
 function AiAdvice({ aiAdvice }) {
+  if (!aiAdvice || aiAdvice.trim() === "") {
+    aiAdvice = "⚠️ No AI advice available.";
+  }
+
   return (
     <div
       style={{
@@ -12,8 +16,19 @@ function AiAdvice({ aiAdvice }) {
     >
       <h2 style={{ color: "#ffcc00" }}>📊 AI Investment Advice</h2>
       <p>
-        <strong>💡 Recommendation:</strong> {aiAdvice}
+        <strong>💡 Recommendation:</strong>
       </p>
+      <pre
+        style={{
+          backgroundColor: "#1E1E1E",
+          padding: "10px",
+          borderRadius: "5px",
+          color: "#FFFFFF",
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {aiAdvice}
+      </pre>
     </div>
   );
 }

@@ -32,43 +32,26 @@ export async function fetchStockTrades() {
   }
 }
 
-// ✅ Fetch AI stock advice
+// ✅ Fetch AI stock advice with better error handling
 export async function fetchAiAdvice() {
   try {
-    console.log(`🔍 Fetching AI stock advice from previous endpoint: ${backendUrl}/api/ai-advice`);
-    const response = await fetch(`${backendUrl}/api/ai-advice`);
+    console.log(`🔍 Fetching AI stock advice from: ${backendUrl}/api/all-politician-trades`);
+    const response = await fetch(`${backendUrl}/api/all-politician-trades`);
 
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}: ${response.statusText}`);
     }
-
     const data = await response.json();
 
-    if (data.status === "error") {
-      console.warn("⚠️ Backend error:", data.message);
-      return "⚠️ No AI advice available."; // Return default error message
+    if (!data.aiAdvice || typeof data.aiAdvice !== "string") {
+      console.warn("⚠️ AI advice is missing or not formatted correctly.");
+      return "⚠️ No AI advice available.";
     }
 
-    console.log("✅ AI Advice received:", data.advice);
-    const latestAdvice = data.advice.length > 0 ? data.advice[0].advice : "⚠️ No AI advice available.";
-    return latestAdvice;
+    console.log("✅ AI Advice received:", data.aiAdvice);
+    return data.aiAdvice; // ✅ Return ONLY the AI advice string
   } catch (error) {
     console.warn(`⚠️ Failed to fetch AI advice from: ${backendUrl}`, error.message);
-    return "❌ Unable to fetch AI stock advice."; // Return default error message
-  }
-}
-
-// ✅ Combined function to fetch both stock trades and AI advice
-export async function fetchStockDataAndAiAdvice() {
-  try {
-    const [trades, aiAdvice] = await Promise.all([
-      fetchStockTrades(),
-      fetchAiAdvice(),
-    ]);
-
-    return { trades, aiAdvice };
-  } catch (error) {
-    console.warn("⚠️ Error in fetching combined data:", error.message);
-    return { trades: [], aiAdvice: "❌ Unable to fetch AI stock advice." }; // Return fallback values
+    return "❌ Unable to fetch AI stock advice.";
   }
 }

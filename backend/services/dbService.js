@@ -119,7 +119,6 @@ export async function storeAiAdvice(advice) {
       const query = `
         INSERT INTO ai_advice (advice, generated_date)
         VALUES ($1, $2)
-        ON CONFLICT (generated_date) DO NOTHING; -- ✅ Prevent duplicate AI advice per day
       `;
       await client.query(query, [advice, today]);
   
