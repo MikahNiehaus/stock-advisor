@@ -19,7 +19,7 @@ export async function getStockAdvice(trades) {
       model: "gpt-4-turbo",
       messages: [
         { role: "system", content: "You are an expert stock analyst. Provide short investment advice based on trade data." },
-        { role: "user", content: `Analyze these trades: ${JSON.stringify(trades)}. Give a clear investment recommendation.` }
+        { role: "user", content: `Analyze these trades: ${JSON.stringify(trades)}. Give a concise investment recommendation.` }
       ],
       max_tokens: 100,
     });
