@@ -2,6 +2,7 @@
   "name": "stock-advisor-backend",
   "version": "1.0.0",
   "description": "Backend for AI stock advisor using OpenAI & Puppeteer",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -14,6 +15,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "openai": "^4.82.0",
+    "pg": "^8.13.1",
     "puppeteer": "^24.1.1"
   },
   "engines": {
