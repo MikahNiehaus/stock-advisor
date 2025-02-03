@@ -21,7 +21,7 @@ export async function getStockAdvice(trades) {
         { role: "system", content: "You are an expert stock analyst. Provide short investment advice based on trade data." },
         { role: "user", content: `Analyze these trades: ${JSON.stringify(trades)}. Give a concise investment recommendation.` }
       ],
-      max_tokens: 100,
+      max_tokens: 1000,
     });
 
     return aiResponse.choices?.[0]?.message?.content || "AI response unavailable.";
