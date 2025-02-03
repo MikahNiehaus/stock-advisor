@@ -10,10 +10,10 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-// ✅ Drop `ai_advice` table if it exists
-const dropAiAdviceTableQuery = `DROP TABLE IF EXISTS ai_advice;`;
+// ✅ Remove `ai_advice` column from `trades` table if it exists
+const removeAiAdviceColumnQuery = `ALTER TABLE trades DROP COLUMN IF EXISTS ai_advice;`;
 
-// ✅ Create `trades` table
+// ✅ Create `trades` table (without `ai_advice` column)
 const createTradesTableQuery = `
   CREATE TABLE IF NOT EXISTS trades (
     id SERIAL PRIMARY KEY,
@@ -26,29 +26,19 @@ const createTradesTableQuery = `
   );
 `;
 
-// ✅ Create `ai_advice` table (WITHOUT politician column)
-const createAiAdviceTableQuery = `
-  CREATE TABLE IF NOT EXISTS ai_advice (
-    id SERIAL PRIMARY KEY,
-    advice TEXT NOT NULL,
-    generated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-`;
-
 const initializeDatabase = async () => {
   const client = await pool.connect();
 
   try {
     console.log("🚀 Connecting to the database...");
 
-    // ✅ Drop AI Advice table first to ensure old structure is removed
-    console.log("⚠️ Dropping existing `ai_advice` table...");
-    await client.query(dropAiAdviceTableQuery);
+    // ✅ Remove `ai_advice` column from the `trades` table if it exists
+    console.log("⚠️ Removing `ai_advice` column from `trades` table...");
+    await client.query(removeAiAdviceColumnQuery);
 
     // ✅ Create tables
-    console.log("📋 Creating `trades` and `ai_advice` tables...");
+    console.log("📋 Creating `trades` table...");
     await client.query(createTradesTableQuery);
-    await client.query(createAiAdviceTableQuery);
     console.log("✅ Tables created successfully!");
 
   } catch (err) {

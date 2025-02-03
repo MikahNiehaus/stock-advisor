@@ -1,38 +1,32 @@
-import OpenAI from "openai";
-import dotenv from "dotenv";
+import { storeAiAdvice, getAllAiAdvice } from "./dbService.js"; // Import AI DB functions
+import { getStockAdvice } from "./aiAdviceGenerator.js"; // AI logic file
+import pool from "./dbService.js"; // Import database connection
 
-dotenv.config();
+/**
+ * ✅ Check if AI advice is needed and generate it if necessary.
+ */
+export async function generateAiAdviceIfNeeded(trades) {
+  const client = await pool.connect();
+  try {
+    const today = new Date().toISOString().split("T")[0];
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-export async function getStockAdvice(trades) {
-    try {
-        if (!trades || trades.length === 0) {
-            return "📊 AI Analysis: No new trade data available today.";
-        }
-
-        // Structure trade data to make it clearer for GPT
-        const tradeSummary = trades.map(politicianTrade => {
-            const politicianName = politicianTrade.politician;
-            const tradeDetails = politicianTrade.trades.map(trade => 
-                `${trade.politician} traded ${trade.stock} (${trade.transaction}) on ${trade.trade_date}`
-            ).join("\n");
-            return `Trades for ${politicianName}:\n${tradeDetails}`;
-        }).join("\n\n");
-
-        console.log("🧠 Sending AI request...");
-        const aiResponse = await openai.chat.completions.create({
-            model: "gpt-4-turbo",
-            messages: [
-                { role: "system", content: "You are an overconfident stock adviser. Analyze politicians' stock trades and give investment advice." },
-                { role: "user", content: `Based on this trade data, provide a direct investment recommendation:\n\n${tradeSummary}\n\nYou MUST follow this format: 'Invest in X because Y'` }
-            ],
-            max_tokens: 50,
-        });
-
-        return aiResponse.choices?.[0]?.message?.content || "📊 AI Analysis: No strong investment recommendation today.";
-    } catch (error) {
-        console.error("AI Error:", error.message);
-        return "📊 AI Analysis: AI failed to generate advice.";
+    // ✅ Check if AI advice already exists for today
+    const result = await client.query("SELECT * FROM ai_advice WHERE generated_date = $1", [today]);
+    if (result.rows.length > 0) {
+      console.log("🧠 AI advice already generated today. Using stored advice.");
+      return result.rows[0].advice; // ✅ Return existing AI advice
     }
+
+    // ✅ If no AI advice exists, generate new one
+    console.log("🧠 Generating AI advice...");
+    const newAdvice = await getStockAdvice(trades);
+    await storeAiAdvice(newAdvice); // ✅ Save new AI advice
+
+    return newAdvice;
+  } catch (error) {
+    console.error("❌ Error fetching AI advice:", error.message);
+    return "AI advice unavailable.";
+  } finally {
+    client.release();
+  }
 }
