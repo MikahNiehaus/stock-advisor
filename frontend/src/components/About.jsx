@@ -27,14 +27,7 @@ function About() {
         <li>Built high-performance <strong>RESTful APIs</strong> and microservices used in fintech and e-commerce.</li>
       </ul>
       <p>
-        <a
-          href="/path-to-your-resume.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "#00ffff", textDecoration: "none", fontWeight: "bold" }}
-        >
-          View Resume
-        </a>
+       
       </p>
 
       <h1>About AI Stock Advisor</h1>
