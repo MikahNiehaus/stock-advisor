@@ -1,6 +1,5 @@
 import puppeteer from "puppeteer";
-import { checkIfDataChanged, storeTradesInDB, getTodaysTrades } from "./dbService.js";
-import { generateAiAdviceIfNeeded } from "./aiService.js";
+import { storeTradesInDB, getAllTrades } from "./dbService.js";
 
 const POLITICIANS = [
   { name: "Nancy Pelosi", url: "https://www.quiverquant.com/congresstrading/politician/Nancy%20Pelosi-P000197" },
@@ -9,31 +8,24 @@ const POLITICIANS = [
 ];
 
 /**
- * ✅ Fetch trades for all politicians **ONLY if needed**.
+ * ✅ Fetch and update the database by scraping **ONLY new trades**.
  */
-export async function fetchTradesForAllPoliticians() {
-  console.log("🔍 Checking if scraping is needed...");
+export async function fetchAndUpdateDatabase() {
+  console.log("🔍 Scraping and updating the database...");
+
   let allTrades = [];
+  const existingTrades = await getAllTrades(); // Get all current trades in DB
 
   for (const politician of POLITICIANS) {
-    console.log(`📊 Checking trades for ${politician.name}...`);
+    console.log(`📊 Scraping trades for ${politician.name}...`);
 
-    // ✅ Check if today's trades exist in DB
-    const todaysTrades = await getTodaysTrades(politician.name);
-    if (todaysTrades.length > 0) {
-      console.log(`⏳ Trades for ${politician.name} already exist today. Skipping scraping.`);
-      allTrades.push({ politician: politician.name, trades: todaysTrades });
-      continue; // Skip scraping
-    }
-
-    // ✅ If no data, scrape using Puppeteer
-    console.log(`🚀 Scraping trades for ${politician.name}...`);
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto(politician.url, { waitUntil: "networkidle2", timeout: 60000 });
 
     await page.waitForSelector("table tbody tr", { timeout: 30000 });
-    const trades = await page.evaluate((politicianName) => {
+
+    const scrapedTrades = await page.evaluate((politicianName) => {
       const rows = document.querySelectorAll("table tbody tr");
       let extractedTrades = [];
 
@@ -56,16 +48,27 @@ export async function fetchTradesForAllPoliticians() {
       return extractedTrades;
     }, politician.name);
 
-    console.log(`✅ Scraped ${trades.length} trades for ${politician.name}`);
-    await storeTradesInDB([{ politician: politician.name, trades }]);
-    allTrades.push({ politician: politician.name, trades });
-
     await browser.close();
+
+    // ✅ Filter out duplicate trades that already exist
+    const newTrades = scrapedTrades.filter(
+      (trade) =>
+        !existingTrades.some(
+          (existing) =>
+            existing.stock === trade.stock &&
+            existing.transaction === trade.transaction &&
+            existing.trade_date === trade.trade_date &&
+            existing.politician === trade.politician
+        )
+    );
+
+    console.log(`✅ Found ${newTrades.length} new trades for ${politician.name}`);
+
+    if (newTrades.length > 0) {
+      await storeTradesInDB([{ politician: politician.name, trades: newTrades }]);
+      allTrades.push({ politician: politician.name, trades: newTrades });
+    }
   }
 
-  // ✅ AI ADVICE LOGIC
-  console.log("🧠 Checking if AI advice is needed...");
-  const aiAdvice = await generateAiAdviceIfNeeded(allTrades.flatMap(p => p.trades));
-
-  return { trades: allTrades, aiAdvice };
+  return { trades: allTrades };
 }

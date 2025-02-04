@@ -1,51 +1,55 @@
-import pkg from 'pg';
-import dotenv from 'dotenv';
+import pkg from "pg";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const { Pool } = pkg;
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false } // Required for Railway
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
-// ✅ Function to check if today's data exists
-export async function checkTodaysData(politician) {
-    const today = new Date().toISOString().split('T')[0];
+export default pool; // ✅ Export the database connection
 
-    try {
-        const res = await pool.query(
-            'SELECT * FROM trades WHERE politician = $1 AND date = $2',
-            [politician, today]
-        );
-        return res.rows.length > 0 ? res.rows : null;
-    } catch (err) {
-        console.error('❌ Database query failed:', err);
-        return null;
-    }
+// ✅ Fetch all stored trades
+export async function getAllTrades() {
+  const client = await pool.connect();
+  try {
+    const result = await client.query("SELECT * FROM trades ORDER BY trade_date DESC");
+    return result.rows;
+  } catch (err) {
+    console.error("❌ Error fetching trades:", err.message);
+    return [];
+  } finally {
+    client.release();
+  }
 }
 
-// ✅ Function to save scraped data
-export async function saveTrades(politician, trades, aiAdvice) {
-    try {
+// ✅ Store new trades in the database
+export async function storeTradesInDB(trades) {
+  const client = await pool.connect();
+  try {
+    for (const { politician, trades: tradeList } of trades) {
+      for (const trade of tradeList) {
         const query = `
-            INSERT INTO trades (politician, stock, transaction, date, ai_advice)
-            VALUES ($1, $2, $3, $4, $5)
+          INSERT INTO trades (politician, stock, transaction, trade_date)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (politician, stock, transaction, trade_date) 
+          DO NOTHING;
         `;
-
-        for (let trade of trades) {
-            await pool.query(query, [
-                politician,
-                trade.stock,
-                trade.transaction,
-                trade.date,
-                aiAdvice
-            ]);
-        }
-
-        console.log(`✅ Trades saved for ${politician}`);
-    } catch (err) {
-        console.error('❌ Failed to insert trades:', err);
+        await client.query(query, [
+          politician,
+          trade.stock,
+          trade.transaction,
+          trade.trade_date,
+        ]);
+      }
     }
+    console.log("✅ New trades inserted successfully!");
+  } catch (err) {
+    console.error("❌ Error inserting trades:", err.message);
+  } finally {
+    client.release();
+  }
 }

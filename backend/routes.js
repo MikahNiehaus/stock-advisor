@@ -1,46 +1,50 @@
 import express from "express";
-import { fetchTradesForAllPoliticians } from "./services/scraperService.js";
-import { getAllTrades, getAllAiAdvice } from "./services/dbService.js";
+import { fetchAndUpdateDatabase } from "./services/scraperService.js";
+import { getAllTrades } from "./services/dbService.js";
+import { getStockAdvice } from "./services/aiAdviceGenerator.js";
 
 const router = express.Router();
 
 /**
- * ✅ API: Fetch all politician trades (from DB or scrape if needed).
+ * ✅ API: Trigger Puppeteer to update the database.
  */
-router.get("/api/all-politician-trades", async (req, res) => {
+router.post("/api/update-database", async (req, res) => {
   try {
-    console.log("🔍 Checking if scraping is needed...");
-    const { trades, aiAdvice } = await fetchTradesForAllPoliticians();
-
+    console.log("🔍 Updating database...");
+    const { trades } = await fetchAndUpdateDatabase();
     res.json({
       status: "success",
-      message: "Fetched all politicians' trades successfully.",
-      aiAdvice,
+      message: "Database updated successfully!",
+      newTrades: trades,
     });
   } catch (error) {
-    console.error("❌ Error fetching trades:", error.message);
+    console.error("❌ Error updating database:", error.message);
     res.status(500).json({
       status: "error",
-      message: "Failed to fetch trades.",
-      trades: [],
+      message: "Failed to update database.",
     });
   }
 });
 
 /**
- * ✅ API: Fetch stored trades from database.
+ * ✅ API: Fetch AI stock advice using **all** database data.
  */
-router.get("/api/politician-trades", async (req, res) => {
-  const trades = await getAllTrades();
-  res.json({ status: "success", trades });
-});
-
-/**
- * ✅ API: Fetch the latest AI advice.
- */
-router.get("/api/all-ai-advice", async (req, res) => {
-  const aiAdvice = await getAllAiAdvice();
-  res.json({ status: "success", aiAdvice });
+router.get("/api/get-ai-advice", async (req, res) => {
+  try {
+    console.log("🔍 Fetching AI stock advice...");
+    const trades = await getAllTrades();
+    const aiAdvice = await getStockAdvice(trades); // ✅ AI always gets ALL data
+    res.json({
+      status: "success",
+      aiAdvice,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching AI advice:", error.message);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch AI advice.",
+    });
+  }
 });
 
 export default router;
