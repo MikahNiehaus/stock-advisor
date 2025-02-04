@@ -16,7 +16,7 @@ export async function getStockAdvice(trades) {
     console.log("🧠 Sending AI request with ALL trade data...");
 
     const aiResponse = await openai.chat.completions.create({
-      model: "o3-mini",
+      model: "gpt-4-turbo",
       messages: [
         {
           role: "system",
