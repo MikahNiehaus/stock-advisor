@@ -1,5 +1,6 @@
 import OpenAI from "openai"; 
 import dotenv from "dotenv";
+import { getRecentTrades } from "./dbService.js"; // ✅ Import the function to get recent trades
 
 dotenv.config();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -7,8 +8,9 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 /**
  * ✅ Generate AI stock advice based on trade data.
  */
-export async function getStockAdvice(trades) {
+export async function getAiAdvice(trades) {
   try {
+        trades = await getRecentTrades(); 
     if (!trades || trades.length === 0) {
       return "No trades available for AI analysis.";
     }
@@ -16,7 +18,7 @@ export async function getStockAdvice(trades) {
     console.log("🧠 Sending AI request with ALL trade data...");
 
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",

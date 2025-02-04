@@ -5,20 +5,21 @@ import pool from "./dbService.js"; // Import database connection
 /**
  * ✅ Check if AI advice is needed and generate it if necessary.
  */
-export async function generateAiAdviceIfNeeded(trades) {
+export async function generateAiAdvice(trades) {
+  console.log("🧠 Generating AI advice...");
+
   const client = await pool.connect();
   try {
-    const today = new Date().toISOString().split("T")[0];
+   // const today = new Date().toISOString().split("T")[0];
 
-    // ✅ Check if AI advice already exists for today
-    const result = await client.query("SELECT * FROM ai_advice WHERE generated_date = $1", [today]);
-    if (result.rows.length > 0) {
-      console.log("🧠 AI advice already generated today. Using stored advice.");
-      return result.rows[0].advice; // ✅ Return existing AI advice
-    }
+    // // ✅ Check if AI advice already exists for today
+    // const result = await client.query("SELECT * FROM ai_advice WHERE generated_date = $1", [today]);
+    // if (result.rows.length > 0) {
+    //   console.log("🧠 AI advice already generated today. Using stored advice.");
+    //   return result.rows[0].advice; // ✅ Return existing AI advice
+    // }
 
     // ✅ If no AI advice exists, generate new one
-    console.log("🧠 Generating AI advice...");
     const newAdvice = await getStockAdvice(trades);
     await storeAiAdvice(newAdvice); // ✅ Save new AI advice
 

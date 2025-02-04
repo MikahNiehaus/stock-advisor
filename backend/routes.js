@@ -1,7 +1,7 @@
 import express from "express";
 import { fetchAndUpdateDatabase } from "./services/scraperService.js";
 import { getAllTrades } from "./services/dbService.js";
-import { getStockAdvice } from "./services/aiAdviceGenerator.js";
+import { getAiAdvice } from "./services/aiAdviceGenerator.js";
 
 const router = express.Router();
 
@@ -27,13 +27,13 @@ router.post("/api/update-database", async (req, res) => {
 });
 
 /**
- * ✅ API: Fetch AI stock advice using **all** database data.
+ * ✅ API: Fetch AI advice using **all** database data.
  */
 router.get("/api/get-ai-advice", async (req, res) => {
   try {
-    console.log("🔍 Fetching AI stock advice...");
+    console.log("🔍 Fetching AI advice...");
     const trades = await getAllTrades();
-    const aiAdvice = await getStockAdvice(trades); // ✅ AI always gets ALL data
+    const aiAdvice = await getAiAdvice(trades); // ✅ AI always gets ALL data
     res.json({
       status: "success",
       aiAdvice,

@@ -29,6 +29,26 @@ export async function getAllTrades() {
 }
 
 /**
+ * ✅ Fetch trades from the last 60 days.
+ */
+export async function getRecentTrades() {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT * FROM trades 
+      WHERE trade_date >= CURRENT_DATE - INTERVAL '60 days' 
+      ORDER BY trade_date DESC
+    `);
+    return result.rows;
+  } catch (err) {
+    console.error("❌ Error fetching recent trades:", err.message);
+    return [];
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * ✅ Store new trades in the database, preventing duplicates.
  */
 export async function storeTradesInDB(trades) {

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import routes from "./routes.js"; // Ensure correct path
+// ⚠️ WARNING: This bypasses SSL verification and should NOT be used in production.
 
 const app = express();
 app.use(cors());
