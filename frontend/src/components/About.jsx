@@ -27,7 +27,6 @@ function About() {
         <li>Built high-performance <strong>RESTful APIs</strong> and microservices used in fintech and e-commerce.</li>
       </ul>
       <p>
-        You can view my full credentials and experience in my resume here:{" "}
         <a
           href="/path-to-your-resume.pdf"
           target="_blank"
