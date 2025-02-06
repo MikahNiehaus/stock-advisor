@@ -62,13 +62,16 @@ function App() {
         <main>
           <h1>📈 AI Stock Advisor</h1>
 
-          <button
-            onClick={updateDatabase}
-            disabled={loading}
-            className={`action-button ${loading ? "disabled" : ""}`}
-          >
-            {loading ? "⏳ Updating Database..." : "📂 Update Database"}
-          </button>
+    {/* 
+<button
+  onClick={updateDatabase}
+  disabled={loading}
+  className={`action-button ${loading ? "disabled" : ""}`}
+>
+  {loading ? "⏳ Updating Database..." : "📂 Update Database"}
+</button> 
+*/}
+
 
           <button
             onClick={fetchAiAdvice}
