@@ -31,7 +31,7 @@ export async function getAiAdvice(trades) {
           )}. With this info and a bit of your own research, give a very concise and creative investment recommendation, like: 'Invest in X because of Y.'`
         }
       ],
-      max_tokens: 300, // Strict limit for concise responses
+      max_tokens: 600, // Strict limit for concise responses
       temperature: 1.2, // High creativity (values >1 increase randomness)
       frequency_penalty: 0.8, // Reduce repetition
       presence_penalty: 1.0, // Encourage new and creative ideas
